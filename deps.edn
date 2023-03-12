@@ -1,0 +1,13 @@
+{:paths ["src"],
+ :deps {org.clojure/clojure {:mvn/version "1.11.1"}},
+ :aliases
+ {:dev
+  {:extra-paths ["test"],
+   :extra-deps {io.github.robertluo/rich-comment-tests {:git/tag "v1.1.0", :git/sha "6d01d12"}
+                net.clojars.wkok/openai-clojure {:mvn/version "0.4.0"}}}
+  :test
+  {:exec-fn com.mjdowney.rich-comment-tests.test-runner/run-tests-in-file-tree!
+   :exec-args {:dirs #{"src"}}}
+  :build
+  {:deps {io.github.seancorfield/build-clj {:git/tag "v0.8.2", :git/sha "0ffdb4c"}},
+   :ns-default build}}}
