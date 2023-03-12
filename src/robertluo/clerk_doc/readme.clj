@@ -5,7 +5,9 @@
             [robertluo.clerk-doc.ai :as ai]))
 
 ;; # io.github.robertluo/clerk-doc
+;;
 ;; [![CI](https://github.com/robertluo/clerk-doc/actions/workflows/main.yml/badge.svg)](https://github.com/robertluo/clerk-doc/actions/workflows/main.yml)
+;;
 ;; Turns Clojure source files into markdown. Usually [clerk](https://github.com/nextjournal/clerk) notebooks are good 
 ;; candidates, when you do not feel like write README.md file for your Github projects.
 
