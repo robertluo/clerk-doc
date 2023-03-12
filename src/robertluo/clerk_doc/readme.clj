@@ -1,28 +1,35 @@
+; This file will generate the project's README.md
+
 (ns robertluo.clerk-doc.readme
   (:require [robertluo.clerk-doc :as doc]
             [robertluo.clerk-doc.ai :as ai]))
 
 ;; # io.github.robertluo/clerk-doc
+;; [![CI]https://github.com/robertluo/clerk-doc/actions/workflows/main.yml/badge.svg](https://github.com/robertluo/clerk-doc/actions/workflows/main.yml)
 
-;; Turn Clojure source files into markdown. Usually [clerk](https://github.com/nextjournal/clerk) are good 
+;; Turns Clojure source files into markdown. Usually [clerk](https://github.com/nextjournal/clerk) notebooks are good 
 ;; candidates, when you do not feel like write README.md file for your Github projects.
 
 ;; ## Usage
 ;; 
-;; Write a clojure source file just like this, then call `doc/notebook->md` function.
+;; Write a clojure source file just like this.
+;; Add an alias in your `deps.edn`: 
 
 (comment
-  (with-bindings {#'doc/*eval-code?* true}
-    (doc/notebook->md {:from "src/robertluo/clerk_doc/readme.clj" :to "README.md" :fn-improve ai/ask-for-comment}))
+  {:clerk-doc {:extra-deps {io.github.robertluo/clerk-doc {:git/tag "v0.1.0" :git/sha "xxxxxx"}}
+               :exec-fn    robertluo.clerk-doc/clj->md
+               :exec-args  {:from "your-source.clj" :to "README.md"
+                            :eval-code? true :ai-improve? false}}}
   )
 
+;; and call it by `clojure -X:clerk`
+
 ;; ## Goodies
-;;
-;;  - If `doc/*eval-code?*` is true (default), the clojure code in the file will be evaluated, 
+;;  - If `:eval-code?` set to true, the clojure code in the file will be evaluated, 
 ;;    the result will be append to the generated code blocks.
-;;  - `ai/ask-for-comment` using ChatGPT to improve your result md file, you may want to merge
-;;    the improvement back. If you are not going to use it, just do not set the `:fn-improve`
-;;    option.
+;;  - Thanks to [openai-clojure](https://github.com/wkok/openai-clojure) the
+;;    `:ai-improve?` flag using OpenAI to improve your result md file.
+;;    You need set up your environment, please refer to the above link.
 ;;  > You have to have a paid account of OpenAI, otherwise the OpenAI's rate limit will generate
 ;;  > a 400 error for anything longer than one simple sentence.
 

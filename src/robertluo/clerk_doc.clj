@@ -2,11 +2,13 @@
  "create documentation from notebooks"
   (:require
    [rewrite-clj.zip :as zip]
-   [clojure.string :as str]))
+   [clojure.string :as str]
+   [robertluo.clerk-doc.ai :as ai]))
 
-(defn comment-doc
+(defn- comment-doc
   [node]
   (let [{:keys [prefix s]} node]
+    ; we only treat ;; style comment as document
     (when (and (= ";" prefix) (str/starts-with? s ";"))
       (subs s 1))))
 
@@ -16,21 +18,23 @@
   )
 
 (def ^:dynamic *eval-code?*
-  "if we should eval the code blocks, default true"
-  true)
+  "if we should eval the code blocks, default false"
+  false)
 
-(defn code->md
+(defn- code->md
+  "turns `zloc` code into `markdown`"
   [zloc]
   (cond-> (zip/string zloc)
     *eval-code?* (str (when-let [eval-rst (when (zip/sexpr-able? zloc) (eval (zip/sexpr zloc)))]
-                       (format "\n(comment\n  ;=>\n  %s\n  )" (pr-str eval-rst))))))
+                        (format "\n(comment\n  ;=>\n  %s\n  )" (pr-str eval-rst))))))
 
 ^:rct/test
 (comment
-  (code->md (zip/of-string "3")) ;=>> #"(?s)3.*\(comment.*;=>.*3.*\)"
+  (code->md (zip/of-string "3")) ;=> "3"
   )
 
-(defn transform-loc
+(defn- transform-loc
+  "transform `zloc` into block pairs"
   [zloc]
   (loop [loc zloc acc []]
     (if (zip/end? loc)
@@ -43,7 +47,8 @@
               [zip/right* [:code (code->md loc)]])]
         (recur (dir loc) (if elem (conj acc elem) acc))))))
 
-(defn merge-blocks
+(defn- merge-blocks
+  "merge block pairs"
   [blocks]
   (let [headers (->> (map first blocks) set)
         header (first headers)]
@@ -58,25 +63,29 @@
   (transform-loc (zip/of-string ";;ok\n5\n")) ;=>> #(= 1 (count %)) 
   )
 
-(defn process-loc
+(defn- process-loc
+  "turn `zloc` into markdown string (finally)"
   [zloc]
-  (->> zloc
-       transform-loc
-       (partition-by first)
-       (map #(-> % merge-blocks second))
-       (apply str)))
+  (let [xf (comp (partition-by first) (map merge-blocks) (map second))]
+    (transduce xf str (transform-loc zloc))))
 
 ^:rct/test
 (comment
   (process-loc (zip/of-string "{:a 1};;ok\n;;world\n"));=>>#"(?s)```clojure.*```"
   )
 
-(defn notebook->md
-  [{:keys [from to fn-improve] :or {fn-improve identity}}]
-  (assert (and from to) "You have to specify from and to keys")
-  (->> (zip/of-file from) (process-loc) (fn-improve) (spit to)))
+;; ===============
+;; Public API
 
-(comment
-  ;;do the real transformation
-  (notebook->md {:from "../lasagna-pull/notebook/introduction.clj" :to "../lasagna-pull/README.md"})
-  )
+(defn clj->md
+  "Convert a clojure source file `from` into markdown file `to`.
+   `:ai-improve?` flag send the file to openai to improve it.
+   `:eval-code?` flag evals code and attach them to result."
+  [{:keys [from to ai-improve? eval-code?] 
+    :or {ai-improve? false eval-code? true}}]
+  (assert (and from to) "You have to specify from and to keys")
+  (with-bindings {#'*eval-code?* eval-code?}
+    (->> (zip/of-file from) 
+         (process-loc)
+         ((if ai-improve? ai/ask-for-comment identity))
+         (spit to))))
