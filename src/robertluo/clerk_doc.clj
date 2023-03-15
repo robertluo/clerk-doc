@@ -26,7 +26,7 @@
   [zloc]
   (cond-> (zip/string zloc)
     *eval-code?* (str (when-let [eval-rst (when (zip/sexpr-able? zloc) (eval (zip/sexpr zloc)))]
-                        (format "\n(comment\n  ;=>\n  %s\n  )" (pr-str eval-rst))))))
+                        (format ";=> %s\n" (pr-str eval-rst))))))
 
 ^:rct/test
 (comment
@@ -55,7 +55,9 @@
     (when-not (= 1 (count headers))
       (throw (ex-info "blocks has to have the same header" {:header header})))
     [header
-     (cond->> (apply str (map second blocks))
+     (cond->> (map second blocks)
+       (= :code header) (interpose "\n")
+       true             (apply str)
        (= :code header) (format "```clojure\n%s\n```\n"))]))
 
 ^:rct/test
