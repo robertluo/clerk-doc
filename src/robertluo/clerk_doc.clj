@@ -1,5 +1,5 @@
 (ns robertluo.clerk-doc
- "create documentation from notebooks"
+  "create documentation from notebooks"
   (:require
    [rewrite-clj.zip :as zip]
    [clojure.string :as str]
@@ -18,19 +18,28 @@
   )
 
 (def ^:dynamic *eval-code?*
-  "if we should eval the code blocks, default false"
-  false)
+  "if we should eval the code blocks, default true"
+  true)
 
 (defn- code->md
   "turns `zloc` code into `markdown`"
   [zloc]
-  (cond-> (zip/string zloc)
-    *eval-code?* (str (when-let [eval-rst (when (zip/sexpr-able? zloc) (eval (zip/sexpr zloc)))]
-                        (format ";=> %s\n" (pr-str eval-rst))))))
+  (letfn [(of-ex [e] #:error{:type (.getClass e)
+                             :message (ex-message e)
+                             :data (ex-data e)})
+          (eval-pr [form]
+            (try (format " ;=> %s" (pr-str (eval form)))
+                 (catch Throwable e (format " ;throws=>%s" (of-ex e)))))]
+    (cond-> (zip/string zloc)
+      *eval-code?*
+      (str (when (zip/sexpr-able? zloc)
+             (-> (zip/sexpr zloc) (eval-pr)))))))
 
 ^:rct/test
 (comment
-  (code->md (zip/of-string "3")) ;=> "3"
+  (code->md (zip/of-string "(+ 1 2)")) ;=> "(+ 1 2) ;=> 3"
+  (code->md (zip/of-string "(println 3)")) ;=>> #";=> nil"
+  (code->md (zip/of-string "(throw (Exception. \"error\"))")) ;=>> #";throws=>"
   )
 
 (defn- transform-loc
@@ -65,16 +74,27 @@
   (transform-loc (zip/of-string ";;ok\n5\n")) ;=>> #(= 1 (count %)) 
   )
 
-(defn- process-loc
+(def block-merge
   "turn `zloc` into markdown string (finally)"
-  [zloc]
-  (let [xf (comp (partition-by first) (map merge-blocks) (map second))]
-    (transduce xf str (transform-loc zloc))))
+  (comp (partition-by first) (map merge-blocks)))
+
+(defn process-loc
+  [ai-improve? zloc]
+  (let [improvement
+        (fn [block]
+          (cond-> block
+            (and ai-improve? (= (first block) :comment))
+            (update 1 ai/ask-for-comment)))]
+    (transduce
+     (comp block-merge (map improvement) (map second))
+     str
+     (transform-loc zloc))))
 
 ^:rct/test
 (comment
-  (process-loc (zip/of-string "{:a 1};;ok\n;;world\n"));=>>#"(?s)```clojure.*```"
+  (process-loc false (zip/of-string "(+ 1 1)\n;;ok\n;;mine")) ;=> "```clojure\n(+ 1 1) ;=> 2\n```\nok\nmine"
   )
+
 
 ;; ===============
 ;; Public API
@@ -83,11 +103,10 @@
   "Convert a clojure source file `from` into markdown file `to`.
    `:ai-improve?` flag send the file to openai to improve it.
    `:eval-code?` flag evals code and attach them to result."
-  [{:keys [from to ai-improve? eval-code?] 
-    :or {ai-improve? false eval-code? true}}]
+  [{:keys [from to ai-improve? eval-code?]
+    :or {ai-improve? false eval-code? false}}]
   (assert (and from to) "You have to specify from and to keys")
   (with-bindings {#'*eval-code?* eval-code?}
-    (->> (zip/of-file from) 
-         (process-loc)
-         ((if ai-improve? ai/ask-for-comment identity))
+    (->> (zip/of-file from)
+         (process-loc ai-improve?)
          (spit to))))

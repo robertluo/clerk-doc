@@ -31,9 +31,15 @@
 ;;  - Thanks to [openai-clojure](https://github.com/wkok/openai-clojure) the
 ;;    `:ai-improve?` flag using OpenAI to improve your result md file.
 ;;    You need set up your environment, please refer to the above link.
+;;    Make sure to check the result after ChatGPT's work, it sometimes
+;;    surprises me.
 ;;  > You have to have a paid account of OpenAI, otherwise the OpenAI's rate limit will generate
 ;;  > a 400 error for anything longer than one simple sentence.
-
+;;
+;; ## Changes
+;; 
+;; - v0.2.0 Improve eval to print out exception and nil
+;;
 ;; ## [UnLicense](https://unlicense.org/)
 
 ;; 2023 Robert Luo

@@ -8,7 +8,7 @@
   (-> (api/create-edit
        {:model "text-davinci-edit-001"
         :input text
-        :instruction "Fix the spelling mistakes, grammar and improve the tone"})
+        :instruction "Fix the spelling and gramar mistakes"})
       (get-in [:choices 0 :text])))
 
 (comment
