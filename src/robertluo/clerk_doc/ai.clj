@@ -5,10 +5,11 @@
 (defn ask-for-comment
   "returns an improved version of `text` with help of OPENAI"
   [text]
-  (-> (api/create-edit
-       {:model "text-davinci-edit-001"
-        :input text
-        :instruction "Fix the spelling and gramar mistakes"})
+  (-> (api/create-completion
+       {:model "text-davinci-003" 
+        :top_p 1.0
+        :max_tokens 2048
+        :prompt (str "Correct this to standard English in Markdown format: " text)})
       (get-in [:choices 0 :text])))
 
 (comment

@@ -4,7 +4,7 @@
   (:require [robertluo.clerk-doc :as doc]
             [robertluo.clerk-doc.ai :as ai]))
 
-;; # io.github.robertluo/clerk-doc
+;; # `io.github.robertluo/clerk-doc`
 ;;
 ;; [![CI](https://github.com/robertluo/clerk-doc/actions/workflows/main.yml/badge.svg)](https://github.com/robertluo/clerk-doc/actions/workflows/main.yml)
 ;;
@@ -13,18 +13,18 @@
 
 ;; ## Usage
 ;; 
-;; Write a clojure source file just like this.
-;; Add an alias in your `deps.edn`: 
+;; 1. Write a clojure source file just like this.
+;; 2. Add an alias in your `deps.edn`.
+;; 3. call it by `clojure -X:clerk-doc`.
 
 (comment
-  {:clerk-doc {:extra-deps {io.github.robertluo/clerk-doc {:git/tag "v0.1.0" :git/sha "xxxxxx"}}
+  {:clerk-doc {:extra-deps {io.github.robertluo/clerk-doc {:git/tag "v0.2.1" :git/sha "xxxxxx"}}
                :exec-fn    robertluo.clerk-doc/clj->md
                :exec-args  {:from "your-source.clj" :to "README.md"
                             :eval-code? true :ai-improve? false}}}
   )
 
-;; and call it by `clojure -X:clerk`
-
+;;
 ;; ## Goodies
 ;;  - If `:eval-code?` set to true, the clojure code in the file will be evaluated, 
 ;;    the result will be append to the generated code blocks.
@@ -41,5 +41,5 @@
 ;; - v0.2.0 Improve eval to print out exception and nil
 ;;
 ;; ## [UnLicense](https://unlicense.org/)
-
+;;
 ;; 2023 Robert Luo

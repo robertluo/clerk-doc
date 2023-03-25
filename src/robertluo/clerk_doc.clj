@@ -74,19 +74,18 @@
   (transform-loc (zip/of-string ";;ok\n5\n")) ;=>> #(= 1 (count %)) 
   )
 
-(def block-merge
-  "turn `zloc` into markdown string (finally)"
-  (comp (partition-by first) (map merge-blocks)))
-
 (defn process-loc
   [ai-improve? zloc]
-  (let [improvement
+  (let [f-improve
         (fn [block]
           (cond-> block
             (and ai-improve? (= (first block) :comment))
-            (update 1 ai/ask-for-comment)))]
+            (update 1 (comp #(str % "\n") ai/ask-for-comment))))]
     (transduce
-     (comp block-merge (map improvement) (map second))
+     (comp (partition-by first)
+           (map merge-blocks)
+           (map f-improve)
+           (map second))
      str
      (transform-loc zloc))))
 
